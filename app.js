@@ -5,7 +5,7 @@ const cors = require('cors');
 
 const HttpError = require('./models/http-error');
 
-// Import routes
+// ✅ Import routes
 const authRoutes = require('./routes/auth-routes');
 const foodRoutes = require('./routes/food-routes');
 const volunteerRoutes = require('./routes/volunteer-routes');
@@ -16,10 +16,9 @@ const notificationRoutes = require('./routes/notification-routes');
 
 const app = express();
 
-// Middleware to parse JSON
-app.use(express.json());
+app.use(express.json()); // ✅ Parse incoming JSON
 
-// CORS configuration
+// ✅ CORS setup
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:5000',
@@ -41,8 +40,8 @@ app.use(
   })
 );
 
-// Register API routes
-app.use('/api/auth', authRoutes);
+// ✅ Register API routes
+app.use('/api/auth', authRoutes);              // <-- REQUIRED for /api/auth/profile
 app.use('/api/food', foodRoutes);
 app.use('/api/volunteer', volunteerRoutes);
 app.use('/api/feedback', feedbackRoutes);
@@ -50,13 +49,18 @@ app.use('/api/inventory', inventoryRoutes);
 app.use('/api/logs', logRoutes);
 app.use('/api/notifications', notificationRoutes);
 
-// 404 handler for unmatched routes
-app.use((req, res, next) => {
-  const error = new HttpError('Could not find this route.', 404);
-  return next(error);
+// ✅ Optional home route to test
+app.get("/", (req, res) => {
+  res.send("API is running...");
 });
 
-// Global error handler
+// ✅ 404 handler (this must come AFTER all routes)
+app.use((req, res, next) => {
+  const error = new HttpError('Could not find this route.', 404);
+  next(error);
+});
+
+// ✅ Global error handler
 app.use((error, req, res, next) => {
   if (res.headersSent) {
     return next(error);
@@ -65,7 +69,7 @@ app.use((error, req, res, next) => {
   res.json({ message: error.message || 'An unknown error occurred!' });
 });
 
-// Serve frontend in production
+// ✅ Serve frontend build in production
 if (process.env.NODE_ENV === "production") {
   const path = require("path");
   app.use(express.static(path.join(__dirname, "frontend", "build")));
@@ -74,7 +78,7 @@ if (process.env.NODE_ENV === "production") {
   });
 }
 
-// Connect to MongoDB and start the server
+// ✅ Connect to MongoDB and start server
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,

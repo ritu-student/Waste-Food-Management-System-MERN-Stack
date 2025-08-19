@@ -60,7 +60,7 @@ const signup = async (req, res, next) => {
   try {
     hashedPassword = await bcrypt.hash(password, 12);
   } catch (err) {
-    console.error("Password hashing failed:", err);
+    console.error("Password hashing failed:", err.message);
     return next(new HttpError("Could not create user, please try again.", 500));
   }
 
@@ -76,16 +76,16 @@ const signup = async (req, res, next) => {
     state,
     url,
     datetime,
-    donorDetails: type === "Donor" ? donorDetails : {},
-    ngoDetails: type === "NGO" ? ngoDetails : {},
-    volunteerDetails: type === "Volunteer" ? volunteerDetails : {},
+    donorDetails: type === "Donor" ? donorDetails : undefined,
+    ngoDetails: type === "NGO" ? ngoDetails : undefined,
+    volunteerDetails: type === "Volunteer" ? volunteerDetails : undefined,
   });
 
   try {
     await createdUser.save();
     console.log("User created:", createdUser);
   } catch (err) {
-    console.error("User save failed:", err);
+    console.error("User save failed:", err.message);
     return next(new HttpError("Signing up failed, please try again later.", 500));
   }
 
@@ -93,11 +93,11 @@ const signup = async (req, res, next) => {
   try {
     token = jwt.sign(
       { userId: createdUser.id, email: createdUser.email, type: createdUser.type },
-      process.env.SECRET_KEY,
+      process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );
   } catch (err) {
-    console.error("JWT signing failed:", err);
+    console.error("JWT signing failed:", err.message);
     return next(new HttpError("Signing up failed, please try again later.", 500));
   }
 
@@ -127,7 +127,7 @@ const login = async (req, res, next) => {
 
   let existingUser;
   try {
-    existingUser = await User.findOne({ email });
+    existingUser = await User.findOne({ email: email });
   } catch (err) {
     console.error("DB lookup failed:", err);
     return next(new HttpError("Logging in failed, please try again later.", 500));
@@ -152,10 +152,11 @@ const login = async (req, res, next) => {
   try {
     token = jwt.sign(
       { userId: existingUser.id, email: existingUser.email, type: existingUser.type },
-      process.env.SECRET_KEY,
+      process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );
   } catch (err) {
+    console.error("JWT signing failed:", err);
     return next(new HttpError("Logging in failed, please try again later.", 500));
   }
 
@@ -166,6 +167,8 @@ const login = async (req, res, next) => {
     token,
   });
 };
+
+
 
 // ✅ Password Reset Request
 const resetPassword = (req, res, next) => {
